@@ -1,0 +1,13 @@
+name: strazh
+version: 0.1.0
+
+authors:
+  - alsoijw <alsoijw@yandex.ru>
+
+targets:
+  strazh:
+    main: src/strazh.cr
+
+crystal: 1.0.0
+
+license: GPLv3
