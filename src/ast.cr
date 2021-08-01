@@ -37,4 +37,25 @@ module Twostroke::AST
       end
     end
   end
+
+  class Call
+    def args_whitout_nill
+      args
+    end
+
+    def get_val(var2val)
+      if t = var2val[ @callee.name.to_s ]?
+        if t.is_a? Strazh::Calable
+          t.call @arguments
+            .reduce([] of Base) { |acc, i| i.nil? ? acc : acc.push(i) }
+            .map(&.get_val(var2val))
+            .reduce([] of Strazh::Value) { |acc, i| i.nil? ? acc : acc.push(i) }
+        else
+          raise Exception.new "#{@callee.name} is not a function line #{@line}"
+        end
+      else
+        raise Exception.new "Undefinded function #{@callee.name} line #{@line}"
+      end
+    end
+  end
 end

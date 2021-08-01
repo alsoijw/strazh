@@ -1,5 +1,13 @@
 require "./spec_helper"
 
+def var2val
+  {
+    "raw_data" => Strazh::Calable.new(->(_a : Array(Strazh::Value)) { Strazh::RawData.new.as Strazh::Value }),
+    "safe_data" => Strazh::Calable.new(->(_a : Array(Strazh::Value)) { Strazh::Value.new }),
+    "db_query" => Strazh::Calable.new(->(a : Array(Strazh::Value)) { Strazh::DbConnect.new(a).as Strazh::Value })
+  } of String => Strazh::Value
+end
+
 describe Strazh do
   it "assigned 1" do
     h = Strazh::TypeChecker.new(<<-CODE, { "b" => Strazh::Value.new }).check
@@ -14,5 +22,22 @@ describe Strazh do
     a = c
     CODE
     h["a"].should_not eq(h["b"])
+  end
+
+  it "raw values 1" do
+    h = Strazh::TypeChecker.new(<<-CODE, var2val).check
+    a = raw_data()
+    CODE
+    h["a"].class.should eq(Strazh::RawData)
+  end
+
+  it "raw value 2" do
+    tc = Strazh::TypeChecker.new("a = db_query(raw_data())", var2val
+    )
+    h = tc.check
+    h["a"].class.should eq(Strazh::DbConnect)
+    h["a"].corrupted.should eq(true)
+
+    tc.corrupted.should eq([ h["a"] ])
   end
 end
