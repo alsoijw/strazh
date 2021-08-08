@@ -1,16 +1,17 @@
 require "./spec_helper"
+require "./shading_hash"
 
 def var2val
-  {
-    "raw_data" => Strazh::Calable.new(->(_a : Array(Strazh::Value)) { Strazh::RawData.new.as Strazh::Value }),
+  Strazh::DimmingHash{
+    "raw_data" => Strazh::Calable.new(->(_a : Array(Strazh::Value)) { Strazh::RawData.new.as Strazh::Value }).as Strazh::Value,
     "safe_data" => Strazh::Calable.new(->(_a : Array(Strazh::Value)) { Strazh::Value.new }),
     "db_query" => Strazh::Calable.new(->(a : Array(Strazh::Value)) { Strazh::DbConnect.new(a).as Strazh::Value })
-  } of String => Strazh::Value
+  }
 end
 
 describe Strazh do
   it "assigned 1" do
-    h = Strazh::TypeChecker.new(<<-CODE, { "b" => Strazh::Value.new }).check
+    h = Strazh::TypeChecker.new(<<-CODE, Strazh::DimmingHash{ "b" => Strazh::Value.new }).check
     a = b
     CODE
     h["a"].should eq(h["b"])
@@ -18,7 +19,7 @@ describe Strazh do
 
   it "assigned 2" do
     a = b = Strazh::Value.new
-    h = Strazh::TypeChecker.new(<<-CODE, { "a" => a, "b" => b, "c" => Strazh::Value.new }).check
+    h = Strazh::TypeChecker.new(<<-CODE, Strazh::DimmingHash{ "a" => a, "b" => b, "c" => Strazh::Value.new }).check
     a = c
     CODE
     h["a"].should_not eq(h["b"])

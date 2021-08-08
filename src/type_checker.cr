@@ -4,7 +4,7 @@ module Strazh
 
     @stsm : Array(Twostroke::AST::Base)
 
-    def initialize(code : String, @var2val = {} of String => Value, @debug = false)
+    def initialize(code : String, @var2val : DimmingHash(String, Value) = DimmingHash{} of String => Value, @debug = false)
       @corrupted = [] of Value
       puts code if @debug
 
