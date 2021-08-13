@@ -7,6 +7,33 @@ module Strazh
     }
   end
 
+  def if_test
+    DimmingHash{
+      "_" => Calable.new(->(_a : Array(Value)) { Numbered.new.as Value }).as Value,
+      "b" => Value.new
+    }
+  end
+
+  class Value
+    property :bases_on
+  end
+
+  class Numbered < Value
+    @@all = 0
+    property :id
+
+    def initialize(@bases_on = [] of Value)
+      @corrupted = false
+      @id = 0
+      @id = @@all
+      @@all += 1
+    end
+
+    def self.reset
+      @@all = 0
+    end
+  end
+
   describe Strazh do
     it "assigned 1" do
       h = TypeChecker.new(<<-CODE, DimmingHash{ "b" => Value.new }).check
@@ -38,6 +65,121 @@ module Strazh
       h["a"].corrupted.should eq(true)
 
       tc.corrupted.should eq([ h["a"] ])
+    end
+
+    it "if 0" do
+      code1 = <<-CODE
+      if(raw_data()) {
+        a = raw_data()
+      } else {
+        a = safe_data()
+      }
+      a = db_query(a)
+      CODE
+
+      code2 = <<-CODE
+      if(raw_data()) {
+        a = safe_data()
+      } else {
+        a = raw_data()
+      }
+      a = db_query(a)
+      CODE
+
+      tc1 = Strazh::TypeChecker.new(code1, var2val)
+      h1 = tc1.check
+
+      tc2 = Strazh::TypeChecker.new(code2, var2val)
+      h2 = tc2.check
+
+      h1["a"].corrupted.should eq(h2["a"].corrupted)
+      tc1.corrupted.should eq([ h1["a"] ])
+      tc2.corrupted.should eq([ h2["a"] ])
+    end
+
+    it "if 1" do
+      Numbered.reset
+      h = TypeChecker.new(<<-CODE, if_test).check
+      a = _()
+      if(b)
+        a = _()
+      CODE
+      h["a"].bases_on.map { |i| i.as(Numbered).id }.uniq.should eq([ 1, 0 ])
+    end
+
+    it "if 2" do
+      Numbered.reset
+      h = TypeChecker.new(<<-CODE, if_test).check
+      a = _()
+      if(a = _())
+        _()
+      CODE
+      h["a"].bases_on.map { |i| i.as(Numbered).id }.uniq.should eq([ 1 ])
+    end
+
+    it "if 3" do
+      Numbered.reset
+      h = TypeChecker.new(<<-CODE, if_test).check
+      a = _()
+      if(a = _())
+        a = _()
+      CODE
+      h["a"].bases_on.map { |i| i.as(Numbered).id }.uniq.should eq([ 2, 1 ])
+    end
+
+    it "if 4" do
+      Numbered.reset
+      h = TypeChecker.new(<<-CODE, if_test).check
+      a = _()
+      if(a = _())
+        a = _()
+      else
+        a = _()
+      CODE
+      h["a"].bases_on.map { |i| i.as(Numbered).id }.uniq.should eq([ 2, 3 ])
+    end
+
+    it "if 5" do
+      Numbered.reset
+      h = TypeChecker.new(<<-CODE, if_test).check
+      a = _()
+      if(a = _())
+        a = _()
+      else if(_())
+        a = _()
+      CODE
+      h["a"].bases_on.map { |i| i.as(Numbered).id }.uniq.should eq([ 2, 4, 1 ])
+    end
+
+    it "if 6" do
+      Numbered.reset
+      h = TypeChecker.new(<<-CODE, if_test).check
+      a = _()
+      if(a = _())
+        a = _()
+      else if(a = _())
+        a = _()
+      else
+        a = _();
+      CODE
+      h["a"].bases_on.map { |i| i.as(Numbered).id }.uniq.should eq([ 2, 4, 5 ])
+    end
+
+    it "if 4" do
+      Numbered.reset
+      h = TypeChecker.new(<<-CODE, if_test).check
+      a = _()
+      if(_()) {
+        if(a = _()) {
+          a = _()
+        } else {
+          a = _()
+        }
+      } else {
+        _()
+      }
+      CODE
+      h["a"].bases_on.map { |i| i.as(Numbered).id }.uniq.should eq([ 3, 4, 0 ])
     end
   end
 end

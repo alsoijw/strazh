@@ -1,4 +1,5 @@
 require "twostroke"
+require "./helpers"
 require "./*"
 
 # TODO: Write documentation for `Strazh`

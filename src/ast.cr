@@ -58,4 +58,23 @@ module Twostroke::AST
       end
     end
   end
+
+  class If
+    def get_val(var2val)
+      t = var2val.wrap
+      @condition.with { |i| i.get_val t }
+      e = var2val.wrap
+      t.each { |k, v| e[k] = v }
+      @then.with { |i| i.get_val t }
+      @else.with { |i| i.get_val e }
+      (t.keys + e.keys).uniq.each { |k| var2val[k] = Strazh::Union.new [ t, e ].map { |v| v[k]?.or Strazh::Undef.new } }
+    end
+  end
+
+  class Body
+    def get_val(var2val)
+      @statements.map { |i| i.get_val var2val if !i.nil? }
+      nil
+    end
+  end
 end

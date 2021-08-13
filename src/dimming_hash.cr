@@ -7,13 +7,23 @@ module Strazh
         super()
       end
 
+      def [](key)
+        if v = fetch(key, nil)
+          v
+        elsif p = @parrent
+          p[key]
+        else
+          raise IndexError.new
+        end
+      end
+
       def []?(key)
         p = @parrent
         fetch(key, p ? p[key]? : nil)
       end
 
       def wrap
-        hs = DimmingHash(String, Int32).new
+        hs = DimmingHash(K, V).new
         hs.parrent = self
         hs
       end
