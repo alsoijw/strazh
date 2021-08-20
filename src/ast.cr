@@ -46,7 +46,7 @@ module Twostroke::AST
     def get_val(var2val)
       if t = var2val[ @callee.name.to_s ]?
         if t.is_a? Strazh::Calable
-          t.call @arguments
+          t.call var2val.wrap_return, @arguments
             .reduce([] of Base) { |acc, i| i.nil? ? acc : acc.push(i) }
             .map(&.get_val(var2val))
             .reduce([] of Strazh::Value) { |acc, i| i.nil? ? acc : acc.push(i) }
@@ -75,6 +75,14 @@ module Twostroke::AST
     def get_val(var2val)
       @statements.map { |i| i.get_val var2val if !i.nil? }
       nil
+    end
+  end
+
+  class Return
+    def get_val(var2val)
+      r = @expression.with { |i| i.get_val var2val }.or Strazh::Undef.new
+      var2val.return << r
+      r
     end
   end
 end

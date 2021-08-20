@@ -21,12 +21,12 @@ module Strazh
   end
 
   class Calable < Value
-    def initialize(@return : Proc(Array(Value), Value), @bases_on = [] of Value)
+    def initialize(@return : Proc(Array(Value), DimmingHash(String, Value), Value), @bases_on = [] of Value)
       super(@bases_on)
     end
 
-    def call(bases_on = [] of Value)
-      @return.call bases_on
+    def call(v2v : DimmingHash(String, Value), bases_on = [] of Value)
+      @return.call bases_on, v2v
     end
   end
 
