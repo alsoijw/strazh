@@ -1,10 +1,11 @@
 module Strazh
   {% if true %}
     class DimmingHash(K, V) < Hash(K, V)
-      property :parrent, :return
+      property :parrent, :return, :corrupted
 
       def initialize(@parrent : Hash(K, V)? = nil)
         @return = [] of V
+        @corrupted = [] of V
         super()
       end
 
@@ -25,6 +26,7 @@ module Strazh
 
       def wrap
         hs = DimmingHash(K, V).new
+        hs.corrupted = corrupted
         hs.parrent = self
         hs.return = @return
         hs
@@ -32,6 +34,7 @@ module Strazh
 
       def wrap_return
         hs = DimmingHash(K, V).new
+        hs.corrupted = corrupted
         hs.parrent = self
         hs
       end

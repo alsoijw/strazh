@@ -2,7 +2,7 @@ module Strazh
   class Value
     getter :corrupted
 
-    def initialize(bases_on = [] of Value)
+    def initialize(v2v : DimmingHash(String, Value), bases_on = [] of Value, )
       @bases_on = [] of Value
       bases_on.each do |i|
         if i.is_a? Strazh::Union
@@ -13,6 +13,7 @@ module Strazh
       end
       @corrupted = false
       @corrupted = @bases_on.reduce(false) { |acc, i| acc || self.check i }
+      v2v.corrupted.push self if @corrupted
     end
 
     def check(i : Value)
@@ -21,8 +22,8 @@ module Strazh
   end
 
   class Calable < Value
-    def initialize(@return : Proc(Array(Value), DimmingHash(String, Value), Value), @bases_on = [] of Value)
-      super(@bases_on)
+    def initialize(v2v : DimmingHash(String, Value), @return : Proc(Array(Value), DimmingHash(String, Value), Value), @bases_on = [] of Value)
+      super(v2v, @bases_on)
     end
 
     def call(v2v : DimmingHash(String, Value), bases_on = [] of Value)

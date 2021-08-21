@@ -1,17 +1,23 @@
 module Strazh
+  def withDimmingHash(&b)
+    dh = DimmingHash(String, Value).new
+    yield dh
+    dh
+  end
+
   def var2val
-    DimmingHash{
-      "raw_data" => Calable.new(->(_a : Array(Value), v2v : DimmingHash(String, Value)) { RawData.new.as Value }).as Value,
-      "safe_data" => Calable.new(->(_a : Array(Value), v2v : DimmingHash(String, Value)) { Value.new }),
-      "db_query" => Calable.new(->(a : Array(Value), v2v : DimmingHash(String, Value)) { DbConnect.new(a).as Value })
-    }
+    withDimmingHash do |dh|
+      dh["raw_data"] = Calable.new(dh, ->(_a : Array(Value), v2v : DimmingHash(String, Value)) { RawData.new(v2v).as Value }).as Value
+      dh["safe_data"] = Calable.new(dh, ->(a : Array(Value), v2v : DimmingHash(String, Value)) { Value.new(v2v, a) })
+      dh["db_query"] = Calable.new(dh, ->(a : Array(Value), v2v : DimmingHash(String, Value)) { DbConnect.new(v2v, a).as Value })
+    end
   end
 
   def if_test
-    DimmingHash{
-      "_" => Calable.new(->(_a : Array(Value), v2v : DimmingHash(String, Value)) { Numbered.new.as Value }).as Value,
-      "b" => Value.new
-    }
+    withDimmingHash do |dh|
+      dh["_"] = Calable.new(dh, ->(_a : Array(Value), v2v : DimmingHash(String, Value)) { Numbered.new.as Value }).as Value
+      dh["b"] = Value.new dh
+    end
   end
 
   class Value
@@ -36,15 +42,14 @@ module Strazh
 
   describe Strazh do
     it "assigned 1" do
-      h = TypeChecker.new(<<-CODE, DimmingHash{ "b" => Value.new }).check
+      h = TypeChecker.new(<<-CODE, withDimmingHash{ |dh| dh["b"] = Value.new dh }).check
       a = b
       CODE
       h["a"].should eq(h["b"])
     end
 
     it "assigned 2" do
-      a = b = Value.new
-      h = TypeChecker.new(<<-CODE, DimmingHash{ "a" => a, "b" => b, "c" => Value.new }).check
+      h = TypeChecker.new(<<-CODE, withDimmingHash{ |dh| dh["a"] = dh["b"] = Value.new dh; dh["c"] = Value.new dh }).check
       a = c
       CODE
       h["a"].should_not eq(h["b"])
@@ -65,6 +70,16 @@ module Strazh
       h["a"].corrupted.should eq(true)
 
       tc.corrupted.should eq([ h["a"] ])
+    end
+
+    it "raw values 3" do
+      Numbered.reset
+      tc = TypeChecker.new(<<-CODE, var2val)
+      b = safe_data(db_query(raw_data()));
+      CODE
+      h = tc.check
+      h["b"].bases_on.should eq(tc.corrupted)
+      tc.corrupted.size.should eq(1)
     end
 
     it "if 0" do

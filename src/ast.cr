@@ -67,7 +67,7 @@ module Twostroke::AST
       t.each { |k, v| e[k] = v }
       @then.with { |i| i.get_val t }
       @else.with { |i| i.get_val e }
-      (t.keys + e.keys).uniq.each { |k| var2val[k] = Strazh::Union.new [ t, e ].map { |v| v[k]?.or Strazh::Undef.new } }
+      (t.keys + e.keys).uniq.each { |k| var2val[k] = Strazh::Union.new var2val, [ t, e ].map { |v| v[k]?.or Strazh::Undef.new var2val } }
     end
   end
 
@@ -80,9 +80,8 @@ module Twostroke::AST
 
   class Return
     def get_val(var2val)
-      r = @expression.with { |i| i.get_val var2val }.or Strazh::Undef.new
-      var2val.return << r
-      r
+      var2val.return << @expression.with { |i| i.get_val var2val }.or Strazh::Undef.new var2val
+      nil
     end
   end
 end

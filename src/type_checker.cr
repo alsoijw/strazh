@@ -1,11 +1,12 @@
 module Strazh
   class TypeChecker
-    getter :corrupted
+    def corrupted
+      @var2val.corrupted
+    end
 
     @stsm : Array(Twostroke::AST::Base)
 
     def initialize(code : String, @var2val : DimmingHash(String, Value) = DimmingHash{} of String => Value, @debug = false)
-      @corrupted = [] of Value
       puts code if @debug
 
       lexer = Twostroke::Lexer.new code
@@ -19,10 +20,10 @@ module Strazh
     def def_func(stsm)
       stsm.each do |i|
         if i.is_a? Twostroke::AST::Function
-          @var2val[ i.name ] = Calable.new(->(a : Array(Value), v2v : DimmingHash(String, Value)) {
+          @var2val[ i.name ] = Calable.new(@var2val, ->(a : Array(Value), v2v : DimmingHash(String, Value)) {
             i.@arguments.map_with_index { |v, k| v2v[v.to_s] = a[k] }
             check_stsm(i.statements, v2v)
-            Union.new(v2v.return).as Value })
+            Union.new(v2v, v2v.return).as Value })
         end
       end
     end
@@ -35,13 +36,12 @@ module Strazh
       def_func stsm
       stsm.each do |i|
         v = i.get_val(v2v)
-        @corrupted.push v if !v.nil? && v.corrupted
         puts(
           Strazh.pretty(i),
           "",
           Strazh.pretty(v2v),
           "",
-          Strazh.pretty(@corrupted),
+          Strazh.pretty(@var2val.corrupted),
           "---",
         ) if @debug
       end
