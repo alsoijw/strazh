@@ -27,7 +27,18 @@ module Strazh
 
   class DbConnect < Value
     def check(i : Value)
-      i.is_a? RawData
+      if i.is_a? Union
+        i.@bases_on.each { |j| return true if j.is_a? RawData }
+        false
+      else
+        i.is_a? RawData
+      end
     end
+  end
+
+  class Union < Value
+  end
+
+  class Undef < Value
   end
 end

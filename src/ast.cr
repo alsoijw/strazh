@@ -58,4 +58,37 @@ module Twostroke::AST
       end
     end
   end
+
+  class If
+    def branch(b, var2val)
+      v2v = var2val.wrap
+      if !b.nil?
+        b.get_val v2v
+      end
+      v2v
+    end
+
+    def get_val(var2val)
+      t = var2val.wrap
+      @condition.with { |i| i.get_val t }
+      e = t.wrap
+      puts typeof(t), typeof(t.dup)
+      @then.with { |i| i.get_val t }
+      @else.with { |i| i.get_val e }
+#      overwrite = t.keys & e.keys
+#      overwrite.each { |k| var2val[k] = Strazh::Union.new([ t, e ].map { |v| v[k] }) }
+      (t.keys + e.keys).uniq.each { |k| var2val[k] = Strazh::Union.new([ t, e ].map { |v| v[k]?.or Strazh::Undef.new }) }
+      # [ t, e ].each { |k, v| 
+#      [ branch(@then, var2val), branch(@else, var2val) ].each do |i|
+#        puts i.keys if !i.nil?
+#      end
+    end
+  end
+
+  class Body
+    def get_val(var2val)
+      @statements.map { |i| i.get_val var2val if !i.nil? }
+      nil
+    end
+  end
 end
